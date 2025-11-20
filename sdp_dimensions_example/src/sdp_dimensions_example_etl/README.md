@@ -1,20 +1,39 @@
-# sdp_dimensions_example
+# SDP Dimensions Example ETL
 
-This folder defines all source code for the sdp_dimensions_example pipeline:
+Lakeflow Declarative Pipeline that creates a route dimension table from airline fare data.
 
-- `explorations/`: Ad-hoc notebooks used to explore the data processed by this pipeline.
-- `transformations/`: All dataset definitions and transformations.
-- `utilities/` (optional): Utility functions and Python modules used in this pipeline.
-- `data_sources/` (optional): View definitions describing the source data for this pipeline.
+## Pipeline Overview
 
-## Getting Started
+This pipeline implements a medallion architecture:
+1. **Bronze**: Ingests raw CSV files from volume
+2. **Silver**: Creates deduplicated route dimension table using SCD Type 1
 
-To get started, go to the `transformations` folder -- most of the relevant source code lives there:
+## Transformations
 
-* By convention, every dataset under `transformations` is in a separate file.
-* Take a look at the sample called "sample_trips_sdp_dimensions_example.py" to get familiar with the syntax.
-  Read more about the syntax at https://docs.databricks.com/dlt/python-ref.html.
-* If you're using the workspace UI, use `Run file` to run and preview a single transformation.
-* If you're using the CLI, use `databricks bundle run sdp_dimensions_example_etl --select sample_trips_sdp_dimensions_example` to run a single transformation.
+### `routes.sql`
 
-For more tutorials and reference material, see https://docs.databricks.com/dlt.
+Creates a route dimension table with:
+- **Deterministic RouteSID**: MD5 hash of `Departure|Arrival`
+- **Upsert Logic**: Uses `APPLY CHANGES` with SCD Type 1 semantics
+- **Deduplication**: Keeps only the latest record per RouteSID
+
+**Output Tables:**
+- `bronze_fare`: Streaming table with raw fare data
+- `silver_route_dim`: Dimension table with unique routes
+
+## Running Transformations
+
+### Using Workspace UI
+- Open the transformation file and use `Run file` to preview
+
+### Using CLI
+```bash
+databricks bundle run sdp_dimensions_example_etl --select routes
+```
+
+## Configuration
+
+The pipeline uses these variables (set in `databricks.yml`):
+- `${catalog}`: Target catalog
+- `${schema}`: Target schema  
+- `${volume}`: Volume path for source CSV files
