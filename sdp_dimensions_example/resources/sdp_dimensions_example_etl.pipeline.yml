@@ -1,0 +1,25 @@
+# The main pipeline for sdp_dimensions_example
+
+resources:
+  pipelines:
+    sdp_dimensions_example_etl:
+      name: sdp_dimensions_example_etl
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      root_path: "../src/sdp_dimensions_example_etl"
+
+      libraries:
+        - glob:
+            include: ../src/sdp_dimensions_example_etl/transformations/**
+      
+      configuration:
+        catalog: ${var.catalog}
+        schema: ${var.schema}
+        volume: ${var.volume}
+
+      environment:
+        dependencies:
+          # We include every dependency defined by pyproject.toml by defining an editable environment
+          # that points to the folder where pyproject.toml is deployed.
+          - --editable ${workspace.file_path}
